@@ -180,28 +180,28 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter }: Chara
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-xs text-muted-foreground">Broń maszynowa (SMG) %</Label>
+            <div className="grid grid-cols-2 gap-2 items-end">
+              <div className="flex flex-col">
+                <Label className="text-xs text-muted-foreground mb-1">SMG %</Label>
                 <Input
                   data-testid="input-skill-smg"
-                  type="number"
-                  min={1}
-                  max={99}
-                  value={editForm.firearmSkillSmg ?? 15}
-                  onChange={(e) => setEditForm((p) => ({ ...p, firearmSkillSmg: Number(e.target.value) }))}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={editForm.firearmSkillSmg ?? ""}
+                  onChange={(e) => setEditForm((p) => ({ ...p, firearmSkillSmg: e.target.value === "" ? undefined : Number(e.target.value) }))}
                   className="h-8 text-sm"
                 />
               </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Karabin maszynowy (MG) %</Label>
+              <div className="flex flex-col">
+                <Label className="text-xs text-muted-foreground mb-1">KM (MG) %</Label>
                 <Input
                   data-testid="input-skill-mg"
-                  type="number"
-                  min={1}
-                  max={99}
-                  value={editForm.firearmSkillMg ?? 10}
-                  onChange={(e) => setEditForm((p) => ({ ...p, firearmSkillMg: Number(e.target.value) }))}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={editForm.firearmSkillMg ?? ""}
+                  onChange={(e) => setEditForm((p) => ({ ...p, firearmSkillMg: e.target.value === "" ? undefined : Number(e.target.value) }))}
                   className="h-8 text-sm"
                 />
               </div>
@@ -238,10 +238,11 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter }: Chara
                 <Label className="text-xs text-muted-foreground">Magazynek</Label>
                 <Input
                   data-testid="input-weapon-magazine"
-                  type="number"
-                  min={1}
-                  value={editForm.weaponMagazine ?? 20}
-                  onChange={(e) => setEditForm((p) => ({ ...p, weaponMagazine: Number(e.target.value) }))}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={editForm.weaponMagazine ?? ""}
+                  onChange={(e) => setEditForm((p) => ({ ...p, weaponMagazine: e.target.value === "" ? undefined : Number(e.target.value) }))}
                   className="h-8 text-sm"
                 />
               </div>
@@ -267,11 +268,11 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter }: Chara
                 <Label className="text-xs text-muted-foreground">Awaria (Malfunction)</Label>
                 <Input
                   data-testid="input-malfunction"
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={editForm.weaponMalfunction ?? 96}
-                  onChange={(e) => setEditForm((p) => ({ ...p, weaponMalfunction: Number(e.target.value) }))}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={editForm.weaponMalfunction ?? ""}
+                  onChange={(e) => setEditForm((p) => ({ ...p, weaponMalfunction: e.target.value === "" ? undefined : Number(e.target.value) }))}
                   className="h-8 text-sm"
                 />
               </div>

@@ -21,6 +21,7 @@ interface TargetConfig {
   volleyCount: number;
   bulletsPerVolley: number; // can be less than max volley size
   armor: number;
+  distanceFromPrevious: number; // meters/yards to the previous target (only relevant for index > 0)
 }
 
 export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
@@ -28,16 +29,15 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
   const maxVolleySize = Math.max(3, Math.floor(activeSkill / 10));
 
   const [targets, setTargets] = useState<TargetConfig[]>([
-    { name: "Cel 1", volleyCount: 1, bulletsPerVolley: maxVolleySize, armor: 0 },
+    { name: "Cel 1", volleyCount: 1, bulletsPerVolley: maxVolleySize, armor: 0, distanceFromPrevious: 1 },
   ]);
   const [baseDifficulty, setBaseDifficulty] = useState<"Normal" | "Hard" | "Extreme">("Normal");
   const [results, setResults] = useState<VolleyResult[] | null>(null);
-  const [distanceBetweenTargets, setDistanceBetweenTargets] = useState(1);
   const [ignoreMalfunction, setIgnoreMalfunction] = useState(false);
 
   useEffect(() => {
     setTargets([
-      { name: "Cel 1", volleyCount: 1, bulletsPerVolley: maxVolleySize, armor: 0 },
+      { name: "Cel 1", volleyCount: 1, bulletsPerVolley: maxVolleySize, armor: 0, distanceFromPrevious: 1 },
     ]);
     setResults(null);
   }, [character.id, maxVolleySize]);
@@ -45,7 +45,7 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
   const addTarget = () => {
     setTargets((prev) => [
       ...prev,
-      { name: `Cel ${prev.length + 1}`, volleyCount: 1, bulletsPerVolley: maxVolleySize, armor: 0 },
+      { name: `Cel ${prev.length + 1}`, volleyCount: 1, bulletsPerVolley: maxVolleySize, armor: 0, distanceFromPrevious: 1 },
     ]);
   };
 
@@ -59,7 +59,7 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
 
   // Calculate total bullets needed
   const bulletsForVolleys = targets.reduce((sum, t) => sum + t.volleyCount * t.bulletsPerVolley, 0);
-  const bulletsForTraversal = targets.length > 1 ? (targets.length - 1) * distanceBetweenTargets : 0;
+  const bulletsForTraversal = targets.slice(1).reduce((sum, t) => sum + t.distanceFromPrevious, 0);
   const totalBullets = bulletsForVolleys + bulletsForTraversal;
   const overMagazine = totalBullets > character.weaponMagazine;
 
@@ -131,19 +131,6 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
                 </SelectContent>
               </Select>
             </div>
-            {targets.length > 1 && (
-              <div className="w-32">
-                <Label className="text-xs text-muted-foreground">Dystans (m/yd)</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={distanceBetweenTargets}
-                  onChange={(e) => setDistanceBetweenTargets(Number(e.target.value))}
-                  className="h-8 text-sm"
-                  data-testid="input-target-distance"
-                />
-              </div>
-            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -187,42 +174,64 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
                     </Button>
                   )}
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Salwy</Label>
+
+                {/* Distance from previous target (only for targets after the first) */}
+                {index > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs text-muted-foreground flex-1">Dystans od poprzedniego (m/yd)</Label>
                     <Input
-                      type="number"
-                      min={1}
-                      max={20}
-                      value={target.volleyCount}
-                      onChange={(e) => updateTarget(index, { volleyCount: Math.max(1, Number(e.target.value)) })}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={target.distanceFromPrevious === 0 ? "" : target.distanceFromPrevious}
+                      onChange={(e) =>
+                        updateTarget(index, {
+                          distanceFromPrevious: e.target.value === "" ? 0 : Number(e.target.value),
+                        })
+                      }
+                      className="h-7 text-sm w-16"
+                      data-testid={`input-target-distance-${index}`}
+                    />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="flex flex-col">
+                    <Label className="text-xs text-muted-foreground mb-1">Salwy</Label>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={target.volleyCount === 0 ? "" : target.volleyCount}
+                      onChange={(e) => updateTarget(index, { volleyCount: e.target.value === "" ? 0 : Math.max(1, Number(e.target.value)) })}
                       className="h-7 text-sm"
                       data-testid={`input-volley-count-${index}`}
                     />
                   </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Pociski/salwę</Label>
+                  <div className="flex flex-col">
+                    <Label className="text-xs text-muted-foreground mb-1">Poc./salwę</Label>
                     <Input
-                      type="number"
-                      min={3}
-                      max={maxVolleySize}
-                      value={Math.min(target.bulletsPerVolley, maxVolleySize)}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={target.bulletsPerVolley === 0 ? "" : Math.min(target.bulletsPerVolley, maxVolleySize)}
                       onChange={(e) =>
                         updateTarget(index, {
-                          bulletsPerVolley: Math.min(Math.max(3, Number(e.target.value)), maxVolleySize),
+                          bulletsPerVolley: e.target.value === "" ? 0 : Math.min(Math.max(3, Number(e.target.value)), maxVolleySize),
                         })
                       }
                       className="h-7 text-sm"
                       data-testid={`input-bullets-per-volley-${index}`}
                     />
                   </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Pancerz</Label>
+                  <div className="flex flex-col">
+                    <Label className="text-xs text-muted-foreground mb-1">Pancerz</Label>
                     <Input
-                      type="number"
-                      min={0}
-                      value={target.armor}
-                      onChange={(e) => updateTarget(index, { armor: Math.max(0, Number(e.target.value)) })}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={target.armor === 0 ? "" : target.armor}
+                      onChange={(e) => updateTarget(index, { armor: e.target.value === "" ? 0 : Math.max(0, Number(e.target.value)) })}
                       className="h-7 text-sm"
                       data-testid={`input-target-armor-${index}`}
                     />

@@ -8,9 +8,10 @@ export function rollDie(sides: number): number {
   return Math.floor(Math.random() * sides) + 1;
 }
 
-// Parse damage string like "1d10+2", "2d6", "1d8"
+// Parse damage string like "1d10+2", "2d6", "1k10+2", "1K8"
+// Accepts d/D (English) and k/K (Polish "kość") as the dice separator
 export function parseDamage(damageStr: string): { count: number; sides: number; bonus: number } {
-  const match = damageStr.toLowerCase().match(/(\d+)d(\d+)(?:\+(\d+))?/);
+  const match = damageStr.toLowerCase().match(/(\d+)[dk](\d+)(?:\+(\d+))?/);
   if (!match) return { count: 1, sides: 10, bonus: 0 };
   return {
     count: parseInt(match[1]),

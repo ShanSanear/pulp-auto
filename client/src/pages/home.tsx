@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import * as store from "@/lib/character-store";
 import type { CharacterData } from "@/lib/character-store";
+import { useTranslation } from "@/lib/i18n";
+import { LOCALE_NAMES } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n";
 import { CharacterPanel } from "@/components/character-panel";
 import { VolleyConfigurator } from "@/components/volley-configurator";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Moon, Sun, Save } from "lucide-react";
 
 export default function Home() {
+  const { t, locale, setLocale } = useTranslation();
   const [selectedCharacterId, setSelectedCharacterId] = useState<number | null>(null);
   const [isDark, setIsDark] = useState(() => window.matchMedia("(prefers-color-scheme: dark)").matches);
   const [unsavedDirty, setUnsavedDirty] = useState(false);
@@ -25,31 +29,47 @@ export default function Home() {
   const characters = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
   const selectedCharacter = characters.find((c) => c.id === selectedCharacterId);
 
+  // Cycle through available locales
+  const localeKeys = Object.keys(LOCALE_NAMES) as Locale[];
+  const nextLocale = localeKeys[(localeKeys.indexOf(locale) + 1) % localeKeys.length];
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <PulpLogo />
+            <PulpLogo t={t} />
             <div>
               <h1 className="text-base font-bold tracking-tight leading-none">
-                Pulp Cthulhu
+                {t("appTitle")}
               </h1>
               <p className="text-xs text-muted-foreground">
-                Kalkulator ognia automatycznego
+                {t("appSubtitle")}
               </p>
             </div>
           </div>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setIsDark(!isDark)}
-            className="w-8 h-8 p-0"
-            data-testid="button-toggle-theme"
-          >
-            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setLocale(nextLocale)}
+              className="h-8 px-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
+              aria-label="Switch language"
+              title="Switch language"
+            >
+              {LOCALE_NAMES[locale]}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setIsDark(!isDark)}
+              className="w-8 h-8 p-0"
+              data-testid="button-toggle-theme"
+            >
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -59,7 +79,7 @@ export default function Home() {
           <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-sm font-medium text-amber-950 dark:text-amber-950">
               <span className="w-2 h-2 rounded-full bg-amber-900/60 animate-pulse shrink-0" />
-              Postać ma niezapisane zmiany — zapisz przed obliczeniem salwy
+              {t("unsavedBannerMessage")}
             </div>
             <Button
               size="sm"
@@ -68,7 +88,7 @@ export default function Home() {
               variant="outline"
             >
               <Save className="w-3 h-3 mr-1" />
-              Zapisz teraz
+              {t("saveNowButton")}
             </Button>
           </div>
         </div>
@@ -100,9 +120,8 @@ export default function Home() {
                       <path d="M2 12l10 5 10-5" />
                     </svg>
                   </div>
-                  <p className="text-muted-foreground text-sm">
-                    Wybierz postać z panelu po lewej lub utwórz nową,
-                    <br />aby rozpocząć konfigurację ognia automatycznego.
+                  <p className="text-muted-foreground text-sm whitespace-pre-line">
+                    {t("emptyStatePlaceholder")}
                   </p>
                 </CardContent>
               </Card>
@@ -113,38 +132,36 @@ export default function Home() {
               <CardContent className="py-4">
                 <details>
                   <summary className="text-xs font-semibold tracking-wide uppercase text-muted-foreground cursor-pointer select-none" data-testid="text-rules-toggle">
-                    Zasady ognia automatycznego (CoC 7ed)
+                    {t("rulesToggleLabel")}
                   </summary>
                   <div className="mt-3 space-y-2 text-xs text-muted-foreground leading-relaxed">
                     <p>
-                      <span className="font-semibold text-foreground">Salwa (Volley):</span>{" "}
-                      Liczba pocisków w salwie = skill/10 (zaokr. w dół), minimum 3.
-                      Np. skill 47% → salwa = 4 pociski.
+                      <span className="font-semibold text-foreground">{t("rulesVolleyHeading")}</span>{" "}
+                      {t("rulesVolleyBody")}
                     </p>
                     <p>
-                      <span className="font-semibold text-foreground">Rzuty na trafienie:</span>{" "}
-                      Pierwszy rzut — normalny. Drugi — 1 kość kary. Trzeci — 2 kości kary.
-                      Czwarty — 2 kości kary + trudność o 1 wyżej. Itd.
+                      <span className="font-semibold text-foreground">{t("rulesHitRollsHeading")}</span>{" "}
+                      {t("rulesHitRollsBody")}
                     </p>
                     <p>
-                      <span className="font-semibold text-foreground">Zwykły sukces:</span>{" "}
-                      Połowa pocisków trafia (zaokr. w dół, min. 1). Rzuć obrażenia za każdy.
+                      <span className="font-semibold text-foreground">{t("rulesNormalSuccessHeading")}</span>{" "}
+                      {t("rulesNormalSuccessBody")}
                     </p>
                     <p>
-                      <span className="font-semibold text-foreground">Sukces ekstremalny:</span>{" "}
-                      Wszystkie pociski trafiają. Pierwsza połowa (min. 1) przebija (impale).
+                      <span className="font-semibold text-foreground">{t("rulesExtremeSuccessHeading")}</span>{" "}
+                      {t("rulesExtremeSuccessBody")}
                     </p>
                     <p>
-                      <span className="font-semibold text-foreground">Pancerz:</span>{" "}
-                      Odejmowany osobno od każdego pocisku.
+                      <span className="font-semibold text-foreground">{t("rulesArmorHeading")}</span>{" "}
+                      {t("rulesArmorBody")}
                     </p>
                     <p>
-                      <span className="font-semibold text-foreground">Przebicie (Impale):</span>{" "}
-                      Maksymalne obrażenia + dodatkowy rzut obrażeń.
+                      <span className="font-semibold text-foreground">{t("rulesImpaleHeading")}</span>{" "}
+                      {t("rulesImpaleBody")}
                     </p>
                     <p>
-                      <span className="font-semibold text-foreground">Zmiana celu:</span>{" "}
-                      1 pocisk tracony za każdy metr/yard dystansu między celami.
+                      <span className="font-semibold text-foreground">{t("rulesTargetChangeHeading")}</span>{" "}
+                      {t("rulesTargetChangeBody")}
                     </p>
                   </div>
                 </details>
@@ -156,14 +173,14 @@ export default function Home() {
 
       <footer className="border-t border-border/50 mt-12">
         <div className="max-w-6xl mx-auto px-4 py-4 text-center text-xs text-muted-foreground">
-          Pulp Cthulhu Full Auto Calculator — mechaniki wg Call of Cthulhu 7th Edition / Pulp Cthulhu
+          {t("footerText")}
         </div>
       </footer>
     </div>
   );
 }
 
-function PulpLogo() {
+function PulpLogo({ t }: { t: (key: any) => string }) {
   return (
     <svg
       width="32"
@@ -171,7 +188,7 @@ function PulpLogo() {
       viewBox="0 0 32 32"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      aria-label="Pulp Cthulhu Ogień Automatyczny"
+      aria-label={t("logoAriaLabel")}
     >
       <circle cx="16" cy="16" r="14" stroke="currentColor" strokeWidth="1.5" />
       <circle cx="16" cy="16" r="10" stroke="currentColor" strokeWidth="1" opacity="0.5" />

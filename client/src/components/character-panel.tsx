@@ -1,6 +1,7 @@
 import { useState, useSyncExternalStore, useEffect } from "react";
 import type { CharacterData } from "@/lib/character-store";
 import * as store from "@/lib/character-store";
+import { useTranslation } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +16,7 @@ interface CharacterPanelProps {
   onUnsavedChange?: (dirty: boolean, save: () => void) => void;
 }
 
-const PRESET_WEAPONS = [
+const PRESET_WEAPONS_BASE = [
   { name: "Thompson M1928", damage: "1d10+2", magazine: 20, type: "smg" as const, malfunction: 96 },
   { name: "Thompson M1928 (Drum)", damage: "1d10+2", magazine: 50, type: "smg" as const, malfunction: 96 },
   { name: "M3 Grease Gun", damage: "1d10+2", magazine: 30, type: "smg" as const, malfunction: 96 },
@@ -26,10 +27,14 @@ const PRESET_WEAPONS = [
   { name: "Bren Gun", damage: "2d6+4", magazine: 30, type: "mg" as const, malfunction: 96 },
   { name: "MG34", damage: "2d6+4", magazine: 50, type: "mg" as const, malfunction: 96 },
   { name: "Browning M1919", damage: "2d6+4", magazine: 250, type: "mg" as const, malfunction: 96 },
-  { name: "Własna", damage: "1d10", magazine: 30, type: "smg" as const, malfunction: 96 },
 ];
 
+// The "custom" weapon entry uses a stable internal key; display name comes from i18n
+const CUSTOM_WEAPON_KEY = "__custom__";
+const CUSTOM_WEAPON_BASE = { name: CUSTOM_WEAPON_KEY, damage: "1d10", magazine: 30, type: "smg" as const, malfunction: 96 };
+
 export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsavedChange }: CharacterPanelProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [editForm, setEditForm] = useState<Partial<CharacterData>>({});
   const [isCreating, setIsCreating] = useState(false);
@@ -39,6 +44,12 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsav
   const characters = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
 
   const selectedCharacter = characters.find((c) => c.id === selectedCharacterId);
+
+  // Build full preset list with translated "Custom" label
+  const PRESET_WEAPONS = [
+    ...PRESET_WEAPONS_BASE,
+    { ...CUSTOM_WEAPON_BASE, name: t("customWeaponOption") },
+  ];
 
   const handleNewCharacter = () => {
     setIsCreating(true);
@@ -58,7 +69,7 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsav
   const handleSave = () => {
     if (isCreating) {
       const newChar = store.createCharacter({
-        name: editForm.name ?? "Nieznany badacz",
+        name: editForm.name ?? t("defaultCharacterName"),
         firearmSkillSmg: editForm.firearmSkillSmg ?? 15,
         firearmSkillMg: editForm.firearmSkillMg ?? 10,
         weaponName: editForm.weaponName ?? "Thompson M1928",
@@ -69,11 +80,14 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsav
       });
       onSelectCharacter(newChar.id);
       setIsCreating(false);
-      toast({ title: "Postać utworzona", description: `${newChar.name} dołącza do drużyny.` });
+      toast({
+        title: t("toastCharacterCreatedTitle"),
+        description: t("toastCharacterCreatedDescription", { name: newChar.name }),
+      });
     } else if (selectedCharacterId) {
       const updated = store.updateCharacter(selectedCharacterId, editForm);
       if (updated) {
-        toast({ title: "Zapisano zmiany" });
+        toast({ title: t("toastSavedTitle") });
       }
     }
   };
@@ -82,7 +96,7 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsav
     store.deleteCharacter(id);
     onSelectCharacter(null);
     setIsCreating(false);
-    toast({ title: "Postać usunięta" });
+    toast({ title: t("toastDeletedTitle") });
   };
 
   const handleSelectPreset = (weaponName: string) => {
@@ -146,7 +160,7 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsav
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-semibold tracking-wide uppercase text-muted-foreground flex items-center gap-2">
               <User className="w-4 h-4" />
-              Postacie
+              {t("charactersSectionTitle")}
             </CardTitle>
             <Button
               size="sm"
@@ -155,7 +169,7 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsav
               data-testid="button-new-character"
               className="h-7 text-xs"
             >
-              <Plus className="w-3 h-3 mr-1" /> Nowa
+              <Plus className="w-3 h-3 mr-1" /> {t("newCharacterButton")}
             </Button>
           </div>
         </CardHeader>
@@ -178,7 +192,7 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsav
             </button>
           ))}
           {characters.length === 0 && (
-            <p className="text-muted-foreground text-xs text-center py-2">Brak postaci. Utwórz nową.</p>
+            <p className="text-muted-foreground text-xs text-center py-2">{t("noCharacters")}</p>
           )}
         </CardContent>
       </Card>
@@ -190,11 +204,11 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsav
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold tracking-wide uppercase text-muted-foreground flex items-center gap-2">
                 <Crosshair className="w-4 h-4" />
-                {isCreating ? "Nowa postać" : "Edytuj postać"}
+                {isCreating ? t("editCardTitleNew") : t("editCardTitleEdit")}
                 {hasUnsavedChanges && (
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/15 text-amber-500 border border-amber-500/30 normal-case tracking-normal">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                    Niezapisane zmiany
+                    {t("unsavedChangesBadge")}
                   </span>
                 )}
               </CardTitle>
@@ -203,7 +217,7 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsav
                 variant="ghost"
                 onClick={() => setIsEditExpanded((v) => !v)}
                 className="h-7 w-7 p-0 text-muted-foreground"
-                aria-label={isEditExpanded ? "Zwiń formularz" : "Rozwiń formularz"}
+                aria-label={isEditExpanded ? t("collapseFormAriaLabel") : t("expandFormAriaLabel")}
               >
                 <ChevronDown
                   className={`w-4 h-4 transition-transform duration-200 ${isEditExpanded ? "rotate-180" : ""}`}
@@ -214,19 +228,19 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsav
           {isEditExpanded && (
           <CardContent className="space-y-3">
             <div>
-              <Label className="text-xs text-muted-foreground">Imię</Label>
+              <Label className="text-xs text-muted-foreground">{t("labelName")}</Label>
               <Input
                 data-testid="input-character-name"
                 value={editForm.name ?? ""}
                 onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
-                placeholder="Imię badacza"
+                placeholder={t("placeholderName")}
                 className="h-8 text-sm"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-2 items-end">
               <div className="flex flex-col">
-                <Label className="text-xs text-muted-foreground mb-1">SMG %</Label>
+                <Label className="text-xs text-muted-foreground mb-1">{t("labelSkillSmg")}</Label>
                 <Input
                   data-testid="input-skill-smg"
                   type="text"
@@ -238,7 +252,7 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsav
                 />
               </div>
               <div className="flex flex-col">
-                <Label className="text-xs text-muted-foreground mb-1">KM (MG) %</Label>
+                <Label className="text-xs text-muted-foreground mb-1">{t("labelSkillMg")}</Label>
                 <Input
                   data-testid="input-skill-mg"
                   type="text"
@@ -252,7 +266,7 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsav
             </div>
 
             <div>
-              <Label className="text-xs text-muted-foreground">Broń (preset)</Label>
+              <Label className="text-xs text-muted-foreground">{t("labelWeaponPreset")}</Label>
               <Select
                 value={editForm.weaponName ?? "Thompson M1928"}
                 onValueChange={handleSelectPreset}
@@ -270,7 +284,7 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsav
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label className="text-xs text-muted-foreground">Obrażenia</Label>
+                <Label className="text-xs text-muted-foreground">{t("labelDamage")}</Label>
                 <Input
                   data-testid="input-weapon-damage"
                   value={editForm.weaponDamage ?? "1d10+2"}
@@ -279,7 +293,7 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsav
                 />
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Magazynek</Label>
+                <Label className="text-xs text-muted-foreground">{t("labelMagazine")}</Label>
                 <Input
                   data-testid="input-weapon-magazine"
                   type="text"
@@ -294,7 +308,7 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsav
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label className="text-xs text-muted-foreground">Typ broni</Label>
+                <Label className="text-xs text-muted-foreground">{t("labelWeaponType")}</Label>
                 <Select
                   value={editForm.weaponType ?? "smg"}
                   onValueChange={(v) => setEditForm((p) => ({ ...p, weaponType: v }))}
@@ -303,13 +317,13 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsav
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="smg">SMG</SelectItem>
-                    <SelectItem value="mg">MG</SelectItem>
+                    <SelectItem value="smg">{t("weaponTypeSmg")}</SelectItem>
+                    <SelectItem value="mg">{t("weaponTypeMg")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Awaria (Malfunction)</Label>
+                <Label className="text-xs text-muted-foreground">{t("labelMalfunction")}</Label>
                 <Input
                   data-testid="input-malfunction"
                   type="text"
@@ -323,10 +337,13 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsav
             </div>
 
             <div className="bg-muted/30 rounded-md p-2 text-xs text-muted-foreground">
-              Aktywny skill: <span className="font-bold text-foreground">{activeSkill}%</span>
-              {" · "}Salwa (volley): <span className="font-bold text-foreground">{volleySize} pocisków</span>
-              {" · "}Trudny: <span className="font-bold text-foreground">{Math.floor(activeSkill / 2)}</span>
-              {" · "}Ekstremalny: <span className="font-bold text-foreground">{Math.floor(activeSkill / 5)}</span>
+              {t("infoActiveSkill", { value: activeSkill })}
+              {" · "}
+              {t("infoVolleySize", { value: volleySize })}
+              {" · "}
+              {t("infoHard", { value: Math.floor(activeSkill / 2) })}
+              {" · "}
+              {t("infoExtreme", { value: Math.floor(activeSkill / 5) })}
             </div>
 
             <div className="flex gap-2">
@@ -338,7 +355,7 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsav
                 className={`flex-1 ${hasUnsavedChanges ? "bg-amber-500 hover:bg-amber-600 text-white border-amber-500" : ""}`}
               >
                 <Save className="w-3 h-3 mr-1" />
-                {isCreating ? "Utwórz" : "Zapisz"}
+                {isCreating ? t("createButton") : t("saveButton")}
               </Button>
               {!isCreating && selectedCharacterId && (
                 <Button

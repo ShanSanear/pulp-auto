@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import type { CharacterData } from "@/lib/character-store";
 import type { VolleyTarget, FullAutoConfig, VolleyResult } from "@/lib/dice";
 import { resolveFullAuto } from "@/lib/dice";
+import { useTranslation } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,11 +26,12 @@ interface TargetConfig {
 }
 
 export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
+  const { t } = useTranslation();
   const activeSkill = character.weaponType === "mg" ? character.firearmSkillMg : character.firearmSkillSmg;
   const maxVolleySize = Math.max(3, Math.floor(activeSkill / 10));
 
   const [targets, setTargets] = useState<TargetConfig[]>([
-    { name: "Cel 1", volleyCount: 1, bulletsPerVolley: maxVolleySize, armor: 0, distanceFromPrevious: 1 },
+    { name: t("defaultTargetName", { n: 1 }), volleyCount: 1, bulletsPerVolley: maxVolleySize, armor: 0, distanceFromPrevious: 1 },
   ]);
   const [baseDifficulty, setBaseDifficulty] = useState<"Normal" | "Hard" | "Extreme">("Normal");
   const [results, setResults] = useState<VolleyResult[] | null>(null);
@@ -37,15 +39,16 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
 
   useEffect(() => {
     setTargets([
-      { name: "Cel 1", volleyCount: 1, bulletsPerVolley: maxVolleySize, armor: 0, distanceFromPrevious: 1 },
+      { name: t("defaultTargetName", { n: 1 }), volleyCount: 1, bulletsPerVolley: maxVolleySize, armor: 0, distanceFromPrevious: 1 },
     ]);
     setResults(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [character.id, maxVolleySize]);
 
   const addTarget = () => {
     setTargets((prev) => [
       ...prev,
-      { name: `Cel ${prev.length + 1}`, volleyCount: 1, bulletsPerVolley: maxVolleySize, armor: 0, distanceFromPrevious: 1 },
+      { name: t("defaultTargetName", { n: prev.length + 1 }), volleyCount: 1, bulletsPerVolley: maxVolleySize, armor: 0, distanceFromPrevious: 1 },
     ]);
   };
 
@@ -54,23 +57,23 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
   };
 
   const updateTarget = (index: number, updates: Partial<TargetConfig>) => {
-    setTargets((prev) => prev.map((t, i) => (i === index ? { ...t, ...updates } : t)));
+    setTargets((prev) => prev.map((tgt, i) => (i === index ? { ...tgt, ...updates } : tgt)));
   };
 
   // Calculate total bullets needed
-  const bulletsForVolleys = targets.reduce((sum, t) => sum + t.volleyCount * t.bulletsPerVolley, 0);
-  const bulletsForTraversal = targets.slice(1).reduce((sum, t) => sum + t.distanceFromPrevious, 0);
+  const bulletsForVolleys = targets.reduce((sum, tgt) => sum + tgt.volleyCount * tgt.bulletsPerVolley, 0);
+  const bulletsForTraversal = targets.slice(1).reduce((sum, tgt) => sum + tgt.distanceFromPrevious, 0);
   const totalBullets = bulletsForVolleys + bulletsForTraversal;
   const overMagazine = totalBullets > character.weaponMagazine;
 
   const handleFire = () => {
     // Build volley list
     const volleys: VolleyTarget[] = [];
-    for (const target of targets) {
-      for (let v = 0; v < target.volleyCount; v++) {
+    for (const tgt of targets) {
+      for (let v = 0; v < tgt.volleyCount; v++) {
         volleys.push({
-          targetName: target.name,
-          bulletsInVolley: target.bulletsPerVolley,
+          targetName: tgt.name,
+          bulletsInVolley: tgt.bulletsPerVolley,
         });
       }
     }
@@ -91,7 +94,7 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
 
     // Apply per-target armor
     const finalResults = rawResults.map((r) => {
-      const targetConfig = targets.find((t) => t.name === r.targetName);
+      const targetConfig = targets.find((tgt) => tgt.name === r.targetName);
       const armor = targetConfig?.armor ?? 0;
       const armorReduction = r.bulletsHit * armor;
       const netDamage = Math.max(0, r.totalDamage - armorReduction);
@@ -101,7 +104,7 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
     setResults(finalResults);
   };
 
-  const totalAttackRolls = targets.reduce((sum, t) => sum + t.volleyCount, 0);
+  const totalAttackRolls = targets.reduce((sum, tgt) => sum + tgt.volleyCount, 0);
 
   return (
     <div className="space-y-4">
@@ -110,13 +113,13 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold tracking-wide uppercase text-muted-foreground flex items-center gap-2">
             <Target className="w-4 h-4" />
-            Konfiguracja salw
+            {t("volleyConfigTitle")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4">
             <div className="flex-1">
-              <Label className="text-xs text-muted-foreground">Poziom trudności (zasięg)</Label>
+              <Label className="text-xs text-muted-foreground">{t("labelDifficulty")}</Label>
               <Select
                 value={baseDifficulty}
                 onValueChange={(v) => setBaseDifficulty(v as "Normal" | "Hard" | "Extreme")}
@@ -125,9 +128,9 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Normal">Normalny (zasięg bazowy)</SelectItem>
-                  <SelectItem value="Hard">Trudny (daleki zasięg)</SelectItem>
-                  <SelectItem value="Extreme">Ekstremalny (bardzo daleki)</SelectItem>
+                  <SelectItem value="Normal">{t("difficultyNormal")}</SelectItem>
+                  <SelectItem value="Hard">{t("difficultyHard")}</SelectItem>
+                  <SelectItem value="Extreme">{t("difficultyExtreme")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -141,7 +144,7 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
               data-testid="checkbox-ignore-malfunction"
             />
             <Label htmlFor="ignore-malfunction" className="text-xs text-muted-foreground cursor-pointer select-none">
-              Ignoruj awarie (malfunction)
+              {t("checkboxIgnoreMalfunction")}
             </Label>
           </div>
 
@@ -178,7 +181,7 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
                 {/* Distance from previous target (only for targets after the first) */}
                 {index > 0 && (
                   <div className="flex items-center gap-2">
-                    <Label className="text-xs text-muted-foreground flex-1">Dystans od poprzedniego (m/yd)</Label>
+                    <Label className="text-xs text-muted-foreground flex-1">{t("labelTargetDistance")}</Label>
                     <Input
                       type="text"
                       inputMode="numeric"
@@ -197,7 +200,7 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
 
                 <div className="grid grid-cols-3 gap-2">
                   <div className="flex flex-col">
-                    <Label className="text-xs text-muted-foreground mb-1">Salwy</Label>
+                    <Label className="text-xs text-muted-foreground mb-1">{t("labelVolleys")}</Label>
                     <Input
                       type="text"
                       inputMode="numeric"
@@ -209,7 +212,7 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
                     />
                   </div>
                   <div className="flex flex-col">
-                    <Label className="text-xs text-muted-foreground mb-1">Poc./salwę</Label>
+                    <Label className="text-xs text-muted-foreground mb-1">{t("labelBulletsPerVolley")}</Label>
                     <Input
                       type="text"
                       inputMode="numeric"
@@ -225,7 +228,7 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
                     />
                   </div>
                   <div className="flex flex-col">
-                    <Label className="text-xs text-muted-foreground mb-1">Pancerz</Label>
+                    <Label className="text-xs text-muted-foreground mb-1">{t("labelArmor")}</Label>
                     <Input
                       type="text"
                       inputMode="numeric"
@@ -238,7 +241,7 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
                   </div>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {target.volleyCount} × {target.bulletsPerVolley} = {target.volleyCount * target.bulletsPerVolley} pocisków
+                  {t("bulletCountSummary", { volleys: target.volleyCount, bpv: target.bulletsPerVolley, total: target.volleyCount * target.bulletsPerVolley })}
                 </div>
               </div>
             ))}
@@ -251,7 +254,7 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
             className="w-full h-8 text-xs"
             data-testid="button-add-target"
           >
-            <Plus className="w-3 h-3 mr-1" /> Dodaj cel
+            <Plus className="w-3 h-3 mr-1" /> {t("addTargetButton")}
           </Button>
 
           <Separator />
@@ -259,29 +262,29 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
           {/* Summary */}
           <div className="bg-muted/30 rounded-md p-3 space-y-1 text-xs">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Pociski na salwy:</span>
+              <span className="text-muted-foreground">{t("summaryBulletsForVolleys")}</span>
               <span className="font-mono font-bold">{bulletsForVolleys}</span>
             </div>
             {bulletsForTraversal > 0 && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Pociski na przejście między celami:</span>
+                <span className="text-muted-foreground">{t("summaryBulletsTraversal")}</span>
                 <span className="font-mono font-bold">{bulletsForTraversal}</span>
               </div>
             )}
             <div className="flex justify-between border-t border-border/30 pt-1">
-              <span className="text-muted-foreground">Razem:</span>
+              <span className="text-muted-foreground">{t("summaryTotal")}</span>
               <span className={`font-mono font-bold ${overMagazine ? "text-destructive" : ""}`}>
                 {totalBullets} / {character.weaponMagazine}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Rzuty na atak:</span>
+              <span className="text-muted-foreground">{t("summaryAttackRolls")}</span>
               <span className="font-mono font-bold">{totalAttackRolls}</span>
             </div>
             {overMagazine && (
               <div className="flex items-center gap-1 text-destructive mt-1">
                 <AlertTriangle className="w-3 h-3" />
-                Przekroczono pojemność magazynka!
+                {t("warningOverMagazine")}
               </div>
             )}
           </div>
@@ -293,7 +296,7 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
             data-testid="button-fire"
           >
             <Flame className="w-4 h-4 mr-2" />
-            OGNIA!
+            {t("fireButton")}
           </Button>
         </CardContent>
       </Card>
@@ -305,7 +308,7 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold tracking-wide uppercase text-muted-foreground flex items-center gap-2">
                 <Zap className="w-4 h-4" />
-                Wyniki
+                {t("resultsTitle")}
               </CardTitle>
               <Button
                 size="sm"
@@ -314,7 +317,7 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
                 className="h-7 text-xs"
                 data-testid="button-clear-results"
               >
-                <RotateCcw className="w-3 h-3 mr-1" /> Wyczyść
+                <RotateCcw className="w-3 h-3 mr-1" /> {t("clearResultsButton")}
               </Button>
             </div>
           </CardHeader>
@@ -328,7 +331,7 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
             <div className="bg-muted/30 rounded-md p-3 space-y-1">
               <div className="text-sm font-semibold flex items-center gap-2">
                 <Skull className="w-4 h-4 text-destructive" />
-                Podsumowanie
+                {t("summaryCardTitle")}
               </div>
               {(() => {
                 const byTarget = new Map<string, { hits: number; damage: number; net: number; impales: number }>();
@@ -341,19 +344,22 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
                     impales: prev.impales + r.impaling,
                   });
                 }
-                return Array.from(byTarget.entries()).map(([target, data]) => (
-                  <div key={target} className="flex justify-between text-sm">
+                return Array.from(byTarget.entries()).map(([targetName, data]) => (
+                  <div key={targetName} className="flex justify-between text-sm">
                     <span>
-                      <span className="font-medium">{target}</span>
+                      <span className="font-medium">{targetName}</span>
                       <span className="text-muted-foreground ml-1">
-                        ({data.hits} trafień{data.impales > 0 ? `, ${data.impales} przebić` : ""})
+                        {t("summaryHitsAndImpales", {
+                          hits: data.hits,
+                          impales: data.impales > 0 ? t("summaryImpalesPart", { n: data.impales }) : "",
+                        })}
                       </span>
                     </span>
                     <span className="font-mono font-bold text-destructive">
-                      {data.net} pkt
+                      {t("summaryPoints", { value: data.net })}
                       {data.net !== data.damage && (
                         <span className="text-muted-foreground text-xs ml-1">
-                          (surowe: {data.damage})
+                          {t("summaryRaw", { value: data.damage })}
                         </span>
                       )}
                     </span>
@@ -369,16 +375,24 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
 }
 
 function VolleyResultCard({ result, skill }: { result: VolleyResult; skill: number }) {
+  const { t } = useTranslation();
   const hardThreshold = Math.floor(skill / 2);
   const extremeThreshold = Math.floor(skill / 5);
 
   const difficultyLabel: Record<string, string> = {
-    Normal: "Normalny",
-    Hard: "Trudny",
-    Extreme: "Ekstremalny",
-    Critical: "Krytyczny",
-    Impossible: "Niemożliwy",
+    Normal: t("difficultyLabelNormal"),
+    Hard: t("difficultyLabelHard"),
+    Extreme: t("difficultyLabelExtreme"),
+    Critical: t("difficultyLabelCritical"),
+    Impossible: t("difficultyLabelImpossible"),
   };
+
+  const threshold =
+    result.difficultyLevel === "Normal" ? skill
+    : result.difficultyLevel === "Hard" ? hardThreshold
+    : result.difficultyLevel === "Extreme" ? extremeThreshold
+    : result.difficultyLevel === "Critical" ? 1
+    : 0;
 
   return (
     <div
@@ -397,17 +411,17 @@ function VolleyResultCard({ result, skill }: { result: VolleyResult; skill: numb
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <div className="flex items-center gap-1 min-w-0 shrink">
           <Badge variant="outline" className="text-xs font-mono shrink-0">
-            Salwa #{result.volleyIndex}
+            {t("volleyBadgeLabel", { n: result.volleyIndex })}
           </Badge>
           <span className="text-xs text-muted-foreground truncate">{result.targetName}</span>
           <span className="text-xs text-muted-foreground shrink-0">
-            ({result.bulletsInVolley} poc.)
+            {t("bulletsSuffix", { n: result.bulletsInVolley })}
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-1 ml-auto">
           {result.penaltyDice > 0 && (
             <Badge variant="secondary" className="text-xs shrink-0">
-              {result.penaltyDice}× kara
+              {t("penaltyDiceBadge", { n: result.penaltyDice })}
             </Badge>
           )}
           {result.difficultyLevel !== "Normal" && (
@@ -423,43 +437,37 @@ function VolleyResultCard({ result, skill }: { result: VolleyResult; skill: numb
           <span className="text-2xl font-mono font-bold">{result.roll}</span>
           {result.penaltyDice > 0 && (
             <span className="text-xs text-muted-foreground">
-              [{result.allTens.map((t) => t * 10).join(", ")} + {result.units}]
+              [{result.allTens.map((t2) => t2 * 10).join(", ")} + {result.units}]
             </span>
           )}
         </div>
 
         <div className="text-xs text-muted-foreground shrink-0">
-          próg: ≤{
-            result.difficultyLevel === "Normal" ? skill
-            : result.difficultyLevel === "Hard" ? hardThreshold
-            : result.difficultyLevel === "Extreme" ? extremeThreshold
-            : result.difficultyLevel === "Critical" ? 1
-            : 0
-          }
+          {t("thresholdLabel", { value: threshold })}
         </div>
 
         <div className="flex flex-wrap gap-1 ml-auto">
           {result.malfunction && (
             <Badge className="bg-orange-600 text-white shrink-0">
-              <AlertTriangle className="w-3 h-3 mr-1" /> AWARIA
+              <AlertTriangle className="w-3 h-3 mr-1" /> {t("badgeMalfunction")}
             </Badge>
           )}
           {result.fumble && !result.malfunction && (
             <Badge className="bg-destructive text-destructive-foreground shrink-0">
-              <Skull className="w-3 h-3 mr-1" /> FIASKO
+              <Skull className="w-3 h-3 mr-1" /> {t("badgeFumble")}
             </Badge>
           )}
           {result.critical && (
-            <Badge className="bg-green-600 text-white shrink-0">KRYTYK</Badge>
+            <Badge className="bg-green-600 text-white shrink-0">{t("badgeCritical")}</Badge>
           )}
           {result.extreme && !result.critical && (
-            <Badge className="bg-green-600 text-white shrink-0">EKSTREMALNY</Badge>
+            <Badge className="bg-green-600 text-white shrink-0">{t("badgeExtreme")}</Badge>
           )}
           {result.success && !result.extreme && !result.critical && (
-            <Badge className="bg-primary text-primary-foreground shrink-0">TRAFIENIE</Badge>
+            <Badge className="bg-primary text-primary-foreground shrink-0">{t("badgeHit")}</Badge>
           )}
           {!result.success && !result.fumble && !result.malfunction && (
-            <Badge variant="secondary" className="shrink-0">PUDŁO</Badge>
+            <Badge variant="secondary" className="shrink-0">{t("badgeMiss")}</Badge>
           )}
         </div>
       </div>
@@ -469,10 +477,10 @@ function VolleyResultCard({ result, skill }: { result: VolleyResult; skill: numb
             <div className="flex items-center gap-2">
               <Crosshair className="w-3 h-3" />
               <span>
-                <span className="font-bold">{result.bulletsHit}</span> z {result.bulletsInVolley} pocisków trafia
+                {t("bulletsHitLine", { hit: result.bulletsHit, total: result.bulletsInVolley })}
                 {result.impaling > 0 && (
                   <span className="text-green-400 ml-1">
-                    ({result.impaling} przebija)
+                    {t("impalingNote", { n: result.impaling })}
                   </span>
                 )}
               </span>
@@ -505,16 +513,14 @@ function VolleyResultCard({ result, skill }: { result: VolleyResult; skill: numb
             <div className="flex items-center gap-2 pt-0.5">
               <Flame className="w-3 h-3 text-destructive" />
               <span>
-                Razem:{" "}
-                <span className="font-mono font-bold text-destructive">{result.totalDamage}</span>
+                {t("totalDamageLine", { value: result.totalDamage })}
               </span>
             </div>
             {result.armorReduction > 0 && (
               <div className="flex items-center gap-2">
                 <Shield className="w-3 h-3" />
                 <span>
-                  Pancerz: -{result.armorReduction} → netto:{" "}
-                  <span className="font-mono font-bold text-destructive">{result.netDamage}</span>
+                  {t("armorReductionLine", { reduction: result.armorReduction, net: result.netDamage })}
                 </span>
               </div>
             )}

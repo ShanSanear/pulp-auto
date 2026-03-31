@@ -1,4 +1,4 @@
-import { useState, useEffect, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import type { CharacterData } from "@/lib/character-store";
 import * as store from "@/lib/character-store";
 import { Button } from "@/components/ui/button";
@@ -36,11 +36,6 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter }: Chara
   // Subscribe to the local character store
   const characters = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
 
-  // Try to load from backend on mount
-  useEffect(() => {
-    store.tryLoadFromBackend();
-  }, []);
-
   const selectedCharacter = characters.find((c) => c.id === selectedCharacterId);
 
   const handleNewCharacter = () => {
@@ -69,15 +64,12 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter }: Chara
         weaponType: editForm.weaponType ?? "smg",
         weaponMalfunction: editForm.weaponMalfunction ?? 96,
       });
-      // Fire and forget backend sync
-      store.trySaveToBackend("POST", "/api/characters", newChar);
       onSelectCharacter(newChar.id);
       setIsCreating(false);
       toast({ title: "Postać utworzona", description: `${newChar.name} dołącza do drużyny.` });
     } else if (selectedCharacterId) {
       const updated = store.updateCharacter(selectedCharacterId, editForm);
       if (updated) {
-        store.trySaveToBackend("PATCH", `/api/characters/${selectedCharacterId}`, editForm);
         toast({ title: "Zapisano zmiany" });
       }
     }
@@ -85,7 +77,6 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter }: Chara
 
   const handleDelete = (id: number) => {
     store.deleteCharacter(id);
-    store.trySaveToBackend("DELETE", `/api/characters/${id}`);
     onSelectCharacter(null);
     setIsCreating(false);
     toast({ title: "Postać usunięta" });

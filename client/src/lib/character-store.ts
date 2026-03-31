@@ -1,6 +1,4 @@
-// Client-side character store that works without a backend
-// Uses React state (in-memory) since localStorage is blocked in sandboxed iframes
-// When the backend API is available, it syncs there too
+// Client-side character store persisted to localStorage
 
 export interface CharacterData {
   id: number;
@@ -14,19 +12,53 @@ export interface CharacterData {
   weaponMalfunction: number;
 }
 
-let nextId = 1;
-let characters: CharacterData[] = [];
+const STORAGE_KEY = "pulp-auto-characters";
+
+function loadFromStorage(): { characters: CharacterData[]; nextId: number } {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const chars: CharacterData[] = Array.isArray(parsed.characters) ? parsed.characters : [];
+      const nextId: number =
+        typeof parsed.nextId === "number"
+          ? parsed.nextId
+          : chars.length > 0
+          ? Math.max(...chars.map((c) => c.id)) + 1
+          : 1;
+      return { characters: chars, nextId };
+    }
+  } catch {
+    // Ignore parse errors — start fresh
+  }
+  return { characters: [], nextId: 1 };
+}
+
+function saveToStorage(chars: CharacterData[], id: number): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ characters: chars, nextId: id }));
+  } catch {
+    // Ignore storage errors (e.g. quota exceeded or sandboxed iframe)
+  }
+}
+
+const initial = loadFromStorage();
+let nextId = initial.nextId;
+let characters: CharacterData[] = initial.characters;
 let snapshot = characters; // stable reference for useSyncExternalStore
 let listeners: Set<() => void> = new Set();
 
 function emitChange() {
   snapshot = [...characters]; // new reference only on actual change
+  saveToStorage(characters, nextId);
   listeners.forEach((l) => l());
 }
 
 export function subscribe(listener: () => void): () => void {
   listeners.add(listener);
-  return () => { listeners.delete(listener); };
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
 export function getSnapshot(): CharacterData[] {
@@ -44,7 +76,10 @@ export function createCharacter(data: Omit<CharacterData, "id">): CharacterData 
   return char;
 }
 
-export function updateCharacter(id: number, data: Partial<Omit<CharacterData, "id">>): CharacterData | undefined {
+export function updateCharacter(
+  id: number,
+  data: Partial<Omit<CharacterData, "id">>,
+): CharacterData | undefined {
   const idx = characters.findIndex((c) => c.id === id);
   if (idx === -1) return undefined;
   characters = characters.map((c) => (c.id === id ? { ...c, ...data } : c));
@@ -55,40 +90,4 @@ export function updateCharacter(id: number, data: Partial<Omit<CharacterData, "i
 export function deleteCharacter(id: number): void {
   characters = characters.filter((c) => c.id !== id);
   emitChange();
-}
-
-// Try to sync with backend API on startup
-export async function tryLoadFromBackend(): Promise<boolean> {
-  try {
-    const res = await fetch("/api/characters", { signal: AbortSignal.timeout(2000) });
-    if (res.ok) {
-      const text = await res.text();
-      if (text) {
-        const data = JSON.parse(text);
-        if (Array.isArray(data) && data.length > 0) {
-          characters = data;
-          nextId = Math.max(...data.map((c: CharacterData) => c.id)) + 1;
-          emitChange();
-        }
-      }
-      return true;
-    }
-  } catch {
-    // Backend not available — expected in static deployment
-  }
-  return false;
-}
-
-// Try to persist to backend (fire and forget)
-export async function trySaveToBackend(method: string, url: string, data?: unknown): Promise<void> {
-  try {
-    await fetch(url, {
-      method,
-      headers: data ? { "Content-Type": "application/json" } : {},
-      body: data ? JSON.stringify(data) : undefined,
-      signal: AbortSignal.timeout(2000),
-    });
-  } catch {
-    // Ignore — client-side state is the source of truth
-  }
 }

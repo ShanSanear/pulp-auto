@@ -67,7 +67,7 @@ export interface VolleyResult {
   malfunction: boolean;
   bulletsHit: number;
   impaling: number;
-  damagePerBullet: { total: number; rolls: number[]; bonus: number }[];
+  damagePerBullet: { total: number; rolls: number[]; bonus: number; impale?: boolean; maxDmg?: number; extraRolls?: number[] }[];
   totalDamage: number;
   armorReduction: number;
   netDamage: number;
@@ -160,7 +160,14 @@ export function resolveFullAuto(config: FullAutoConfig): VolleyResult[] {
         const { count, sides, bonus } = parseDamage(config.weaponDamage);
         const maxDmg = count * sides + bonus;
         const extraRoll = rollDamage(config.weaponDamage);
-        const impaleDmg = { total: maxDmg + extraRoll.total, rolls: [...dmg.rolls, ...extraRoll.rolls], bonus: bonus };
+        const impaleDmg = {
+          total: maxDmg + extraRoll.total,
+          rolls: dmg.rolls,
+          bonus,
+          impale: true,
+          maxDmg,
+          extraRolls: extraRoll.rolls,
+        };
         damagePerBullet.push(impaleDmg);
         totalDamage += impaleDmg.total;
       } else {

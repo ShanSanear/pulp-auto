@@ -457,42 +457,60 @@ function VolleyResultCard({ result, skill }: { result: VolleyResult; skill: numb
       </div>
 
       {result.bulletsHit > 0 && (
-        <div className="space-y-1 text-xs">
-          <div className="flex items-center gap-2">
-            <Crosshair className="w-3 h-3" />
-            <span>
-              <span className="font-bold">{result.bulletsHit}</span> z {result.bulletsInVolley} pocisków trafia
-              {result.impaling > 0 && (
-                <span className="text-green-400 ml-1">
-                  ({result.impaling} przebija)
-                </span>
-              )}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Flame className="w-3 h-3 text-destructive" />
-            <span>
-              Obrażenia:{" "}
-              {result.damagePerBullet.map((d, i) => (
-                <span key={i}>
-                  {i > 0 && " + "}
-                  <span className="font-mono font-bold">{d.total}</span>
-                </span>
-              ))}
-              {" = "}
-              <span className="font-mono font-bold text-destructive">{result.totalDamage}</span>
-            </span>
-          </div>
-          {result.armorReduction > 0 && (
+          <div className="space-y-1 text-xs">
             <div className="flex items-center gap-2">
-              <Shield className="w-3 h-3" />
+              <Crosshair className="w-3 h-3" />
               <span>
-                Pancerz: -{result.armorReduction} → netto:{" "}
-                <span className="font-mono font-bold text-destructive">{result.netDamage}</span>
+                <span className="font-bold">{result.bulletsHit}</span> z {result.bulletsInVolley} pocisków trafia
+                {result.impaling > 0 && (
+                  <span className="text-green-400 ml-1">
+                    ({result.impaling} przebija)
+                  </span>
+                )}
               </span>
             </div>
-          )}
-        </div>
+            <div className="space-y-0.5 pl-5">
+              {result.damagePerBullet.map((d, i) => (
+                <div key={i} className="flex items-baseline gap-1 text-xs text-muted-foreground font-mono">
+                  <span className="text-foreground/50 w-3 shrink-0">•</span>
+                  {d.impale ? (
+                    <>
+                      <span className="text-green-400">★</span>
+                      <span className="font-bold text-foreground">{d.total}</span>
+                      <span className="text-muted-foreground/70">
+                        [max({d.maxDmg}) + {d.extraRolls!.join("+")}
+                        {d.bonus > 0 ? `+${d.bonus}` : ""}]
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-bold text-foreground">{d.total}</span>
+                      <span className="text-muted-foreground/70">
+                        [{d.rolls.join("+")}
+                        {d.bonus > 0 ? `+${d.bonus}` : ""}]
+                      </span>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 pt-0.5">
+              <Flame className="w-3 h-3 text-destructive" />
+              <span>
+                Razem:{" "}
+                <span className="font-mono font-bold text-destructive">{result.totalDamage}</span>
+              </span>
+            </div>
+            {result.armorReduction > 0 && (
+              <div className="flex items-center gap-2">
+                <Shield className="w-3 h-3" />
+                <span>
+                  Pancerz: -{result.armorReduction} → netto:{" "}
+                  <span className="font-mono font-bold text-destructive">{result.netDamage}</span>
+                </span>
+              </div>
+            )}
+          </div>
       )}
     </div>
   );

@@ -132,10 +132,11 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsav
       );
 
   // Notify parent of unsaved state so it can show a sticky banner
+  // Don't show the banner when creating a new character — the form itself is obviously unsaved
   useEffect(() => {
-    onUnsavedChange?.(hasUnsavedChanges, handleSave);
+    onUnsavedChange?.(isCreating ? false : hasUnsavedChanges, handleSave);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasUnsavedChanges]);
+  }, [hasUnsavedChanges, isCreating]);
 
   return (
     <div className="space-y-4">

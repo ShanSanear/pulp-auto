@@ -1,4 +1,4 @@
-import { useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore, useEffect } from "react";
 import type { CharacterData } from "@/lib/character-store";
 import * as store from "@/lib/character-store";
 import { Button } from "@/components/ui/button";
@@ -7,11 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Save, User, Crosshair } from "lucide-react";
+import { Plus, Trash2, Save, User, Crosshair, ChevronDown } from "lucide-react";
 
 interface CharacterPanelProps {
   selectedCharacterId: number | null;
   onSelectCharacter: (id: number | null) => void;
+  onUnsavedChange?: (dirty: boolean, save: () => void) => void;
 }
 
 const PRESET_WEAPONS = [
@@ -28,10 +29,11 @@ const PRESET_WEAPONS = [
   { name: "Custom", damage: "1d10", magazine: 30, type: "smg" as const, malfunction: 96 },
 ];
 
-export function CharacterPanel({ selectedCharacterId, onSelectCharacter }: CharacterPanelProps) {
+export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsavedChange }: CharacterPanelProps) {
   const { toast } = useToast();
   const [editForm, setEditForm] = useState<Partial<CharacterData>>({});
   const [isCreating, setIsCreating] = useState(false);
+  const [isEditExpanded, setIsEditExpanded] = useState(true);
 
   // Subscribe to the local character store
   const characters = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
@@ -40,6 +42,7 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter }: Chara
 
   const handleNewCharacter = () => {
     setIsCreating(true);
+    setIsEditExpanded(true);
     setEditForm({
       name: "",
       firearmSkillSmg: 15,
@@ -114,6 +117,26 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter }: Chara
   const activeSkill = (editForm.weaponType === "mg" ? editForm.firearmSkillMg : editForm.firearmSkillSmg) ?? 15;
   const volleySize = Math.max(3, Math.floor(activeSkill / 10));
 
+  // Detect unsaved changes: compare editForm against the saved character (or always dirty when creating)
+  const hasUnsavedChanges = isCreating
+    ? Object.keys(editForm).length > 0
+    : selectedCharacter != null && (
+        editForm.name !== selectedCharacter.name ||
+        editForm.firearmSkillSmg !== selectedCharacter.firearmSkillSmg ||
+        editForm.firearmSkillMg !== selectedCharacter.firearmSkillMg ||
+        editForm.weaponName !== selectedCharacter.weaponName ||
+        editForm.weaponDamage !== selectedCharacter.weaponDamage ||
+        editForm.weaponMagazine !== selectedCharacter.weaponMagazine ||
+        editForm.weaponType !== selectedCharacter.weaponType ||
+        editForm.weaponMalfunction !== selectedCharacter.weaponMalfunction
+      );
+
+  // Notify parent of unsaved state so it can show a sticky banner
+  useEffect(() => {
+    onUnsavedChange?.(hasUnsavedChanges, handleSave);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasUnsavedChanges]);
+
   return (
     <div className="space-y-4">
       {/* Character list */}
@@ -163,11 +186,31 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter }: Chara
       {(selectedCharacter || isCreating) && (
         <Card className="border-border/50 bg-card/80">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold tracking-wide uppercase text-muted-foreground flex items-center gap-2">
-              <Crosshair className="w-4 h-4" />
-              {isCreating ? "Nowa postać" : "Edytuj postać"}
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold tracking-wide uppercase text-muted-foreground flex items-center gap-2">
+                <Crosshair className="w-4 h-4" />
+                {isCreating ? "Nowa postać" : "Edytuj postać"}
+                {hasUnsavedChanges && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/15 text-amber-500 border border-amber-500/30 normal-case tracking-normal">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    Niezapisane zmiany
+                  </span>
+                )}
+              </CardTitle>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setIsEditExpanded((v) => !v)}
+                className="h-7 w-7 p-0 text-muted-foreground"
+                aria-label={isEditExpanded ? "Zwiń formularz" : "Rozwiń formularz"}
+              >
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform duration-200 ${isEditExpanded ? "rotate-180" : ""}`}
+                />
+              </Button>
+            </div>
           </CardHeader>
+          {isEditExpanded && (
           <CardContent className="space-y-3">
             <div>
               <Label className="text-xs text-muted-foreground">Imię</Label>
@@ -291,7 +334,7 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter }: Chara
                 onClick={handleSave}
                 disabled={!editForm.name}
                 data-testid="button-save-character"
-                className="flex-1"
+                className={`flex-1 ${hasUnsavedChanges ? "bg-amber-500 hover:bg-amber-600 text-white border-amber-500" : ""}`}
               >
                 <Save className="w-3 h-3 mr-1" />
                 {isCreating ? "Utwórz" : "Zapisz"}
@@ -308,6 +351,7 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter }: Chara
               )}
             </div>
           </CardContent>
+          )}
         </Card>
       )}
     </div>

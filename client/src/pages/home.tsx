@@ -1,15 +1,22 @@
-import { useState, useEffect, useSyncExternalStore } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import * as store from "@/lib/character-store";
 import type { CharacterData } from "@/lib/character-store";
 import { CharacterPanel } from "@/components/character-panel";
 import { VolleyConfigurator } from "@/components/volley-configurator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Save } from "lucide-react";
 
 export default function Home() {
   const [selectedCharacterId, setSelectedCharacterId] = useState<number | null>(null);
   const [isDark, setIsDark] = useState(() => window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const [unsavedDirty, setUnsavedDirty] = useState(false);
+  const [pendingSave, setPendingSave] = useState<(() => void) | null>(null);
+
+  const handleUnsavedChange = useCallback((dirty: boolean, save: () => void) => {
+    setUnsavedDirty(dirty);
+    setPendingSave(dirty ? () => save : null);
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDark);
@@ -46,6 +53,27 @@ export default function Home() {
         </div>
       </header>
 
+      {/* Unsaved changes banner — sticky just below header */}
+      {unsavedDirty && (
+        <div className="sticky top-[53px] z-40 w-full bg-amber-500/95 backdrop-blur-sm border-b border-amber-600/50 shadow-sm">
+          <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-amber-950 dark:text-amber-950">
+              <span className="w-2 h-2 rounded-full bg-amber-900/60 animate-pulse shrink-0" />
+              Postać ma niezapisane zmiany — zapisz przed obliczeniem salwy
+            </div>
+            <Button
+              size="sm"
+              onClick={() => pendingSave?.()}
+              className="h-7 text-xs bg-amber-900/20 hover:bg-amber-900/30 text-amber-950 border border-amber-900/30 shrink-0"
+              variant="outline"
+            >
+              <Save className="w-3 h-3 mr-1" />
+              Zapisz teraz
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Main content */}
       <main className="max-w-6xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -54,6 +82,7 @@ export default function Home() {
             <CharacterPanel
               selectedCharacterId={selectedCharacterId}
               onSelectCharacter={setSelectedCharacterId}
+              onUnsavedChange={handleUnsavedChange}
             />
           </div>
 

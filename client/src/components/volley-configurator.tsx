@@ -230,7 +230,7 @@ export function VolleyConfigurator({ character }: VolleyConfiguratorProps) {
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
-                      value={target.armor === 0 ? "" : target.armor}
+                      value={String(target.armor)}
                       onChange={(e) => updateTarget(index, { armor: e.target.value === "" ? 0 : Math.max(0, Number(e.target.value)) })}
                       className="h-7 text-sm"
                       data-testid={`input-target-armor-${index}`}

@@ -372,6 +372,14 @@ function VolleyResultCard({ result, skill }: { result: VolleyResult; skill: numb
   const hardThreshold = Math.floor(skill / 2);
   const extremeThreshold = Math.floor(skill / 5);
 
+  const difficultyLabel: Record<string, string> = {
+    Normal: "Normalny",
+    Hard: "Trudny",
+    Extreme: "Ekstremalny",
+    Critical: "Krytyczny",
+    Impossible: "Niemożliwy",
+  };
+
   return (
     <div
       className={`rounded-md p-3 border text-sm space-y-2 ${
@@ -386,32 +394,32 @@ function VolleyResultCard({ result, skill }: { result: VolleyResult; skill: numb
           : "border-border/30 bg-muted/10"
       }`}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs font-mono">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <div className="flex items-center gap-1 min-w-0 shrink">
+          <Badge variant="outline" className="text-xs font-mono shrink-0">
             Salwa #{result.volleyIndex}
           </Badge>
-          <span className="text-xs text-muted-foreground">{result.targetName}</span>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-muted-foreground truncate">{result.targetName}</span>
+          <span className="text-xs text-muted-foreground shrink-0">
             ({result.bulletsInVolley} poc.)
           </span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1 ml-auto">
           {result.penaltyDice > 0 && (
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant="secondary" className="text-xs shrink-0">
               {result.penaltyDice}× kara
             </Badge>
           )}
           {result.difficultyLevel !== "Normal" && (
-            <Badge variant="secondary" className="text-xs">
-              {result.difficultyLevel}
+            <Badge variant="secondary" className="text-xs shrink-0">
+              {difficultyLabel[result.difficultyLevel] ?? result.difficultyLevel}
             </Badge>
           )}
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <div className="flex items-center gap-1 shrink-0">
           <span className="text-2xl font-mono font-bold">{result.roll}</span>
           {result.penaltyDice > 0 && (
             <span className="text-xs text-muted-foreground">
@@ -420,7 +428,7 @@ function VolleyResultCard({ result, skill }: { result: VolleyResult; skill: numb
           )}
         </div>
 
-        <div className="text-xs text-muted-foreground">
+        <div className="text-xs text-muted-foreground shrink-0">
           próg: ≤{
             result.difficultyLevel === "Normal" ? skill
             : result.difficultyLevel === "Hard" ? hardThreshold
@@ -430,30 +438,30 @@ function VolleyResultCard({ result, skill }: { result: VolleyResult; skill: numb
           }
         </div>
 
-        <div className="flex-1" />
-
-        {result.malfunction && (
-          <Badge className="bg-orange-600 text-white">
-            <AlertTriangle className="w-3 h-3 mr-1" /> AWARIA
-          </Badge>
-        )}
-        {result.fumble && !result.malfunction && (
-          <Badge className="bg-destructive text-destructive-foreground">
-            <Skull className="w-3 h-3 mr-1" /> FUMBLE
-          </Badge>
-        )}
-        {result.critical && (
-          <Badge className="bg-green-600 text-white">KRYTYK</Badge>
-        )}
-        {result.extreme && !result.critical && (
-          <Badge className="bg-green-600 text-white">EKSTREMALNY</Badge>
-        )}
-        {result.success && !result.extreme && !result.critical && (
-          <Badge className="bg-primary text-primary-foreground">TRAFIENIE</Badge>
-        )}
-        {!result.success && !result.fumble && !result.malfunction && (
-          <Badge variant="secondary">PUDŁO</Badge>
-        )}
+        <div className="flex flex-wrap gap-1 ml-auto">
+          {result.malfunction && (
+            <Badge className="bg-orange-600 text-white shrink-0">
+              <AlertTriangle className="w-3 h-3 mr-1" /> AWARIA
+            </Badge>
+          )}
+          {result.fumble && !result.malfunction && (
+            <Badge className="bg-destructive text-destructive-foreground shrink-0">
+              <Skull className="w-3 h-3 mr-1" /> FIASKO
+            </Badge>
+          )}
+          {result.critical && (
+            <Badge className="bg-green-600 text-white shrink-0">KRYTYK</Badge>
+          )}
+          {result.extreme && !result.critical && (
+            <Badge className="bg-green-600 text-white shrink-0">EKSTREMALNY</Badge>
+          )}
+          {result.success && !result.extreme && !result.critical && (
+            <Badge className="bg-primary text-primary-foreground shrink-0">TRAFIENIE</Badge>
+          )}
+          {!result.success && !result.fumble && !result.malfunction && (
+            <Badge variant="secondary" className="shrink-0">PUDŁO</Badge>
+          )}
+        </div>
       </div>
 
       {result.bulletsHit > 0 && (

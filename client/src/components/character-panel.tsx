@@ -26,7 +26,7 @@ const PRESET_WEAPONS = [
   { name: "Bren Gun", damage: "2d6+4", magazine: 30, type: "mg" as const, malfunction: 96 },
   { name: "MG34", damage: "2d6+4", magazine: 50, type: "mg" as const, malfunction: 96 },
   { name: "Browning M1919", damage: "2d6+4", magazine: 250, type: "mg" as const, malfunction: 96 },
-  { name: "Custom", damage: "1d10", magazine: 30, type: "smg" as const, malfunction: 96 },
+  { name: "Własna", damage: "1d10", magazine: 30, type: "smg" as const, malfunction: 96 },
 ];
 
 export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsavedChange }: CharacterPanelProps) {
@@ -324,8 +324,8 @@ export function CharacterPanel({ selectedCharacterId, onSelectCharacter, onUnsav
             <div className="bg-muted/30 rounded-md p-2 text-xs text-muted-foreground">
               Aktywny skill: <span className="font-bold text-foreground">{activeSkill}%</span>
               {" · "}Salwa (volley): <span className="font-bold text-foreground">{volleySize} pocisków</span>
-              {" · "}Hard: <span className="font-bold text-foreground">{Math.floor(activeSkill / 2)}</span>
-              {" · "}Extreme: <span className="font-bold text-foreground">{Math.floor(activeSkill / 5)}</span>
+              {" · "}Trudny: <span className="font-bold text-foreground">{Math.floor(activeSkill / 2)}</span>
+              {" · "}Ekstremalny: <span className="font-bold text-foreground">{Math.floor(activeSkill / 5)}</span>
             </div>
 
             <div className="flex gap-2">

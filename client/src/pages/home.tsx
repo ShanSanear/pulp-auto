@@ -171,7 +171,7 @@ function PulpLogo() {
       viewBox="0 0 32 32"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      aria-label="Pulp Cthulhu Full Auto"
+      aria-label="Pulp Cthulhu Ogień Automatyczny"
     >
       <circle cx="16" cy="16" r="14" stroke="currentColor" strokeWidth="1.5" />
       <circle cx="16" cy="16" r="10" stroke="currentColor" strokeWidth="1" opacity="0.5" />
